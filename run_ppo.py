@@ -176,7 +176,6 @@ def run_policy(env, policy, val_func, scaler, logger, killer, episodes):
         if killer.kill_now:
             if input('Terminate training (y/[n])? ') == 'y':
                 break
-            killer.kill_now = False
     
     unscaled = np.concatenate([t['unscaled_obs'] for t in trajectories])
     scaler.update(unscaled)  # update running statistics for scaling observations
@@ -371,7 +370,7 @@ if __name__ == "__main__":
                         default=0.003)
     parser.add_argument('-b', '--batch_size', type=int,
                         help='Number of episodes per training batch',
-                        default=30)
+                        default=1)
 
     args = parser.parse_args()
     main(**vars(args))

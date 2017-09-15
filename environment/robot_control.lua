@@ -64,6 +64,12 @@ function do_action_rl(robot_hd, action)
     action[5] = leg_l + dl*action[5]
     -- print(leg_l, action[5])
     result = do_action(robot_hd, action)
+
+    local new_pos=simGetObjectPosition(robot_hd,-1)
+    if math.abs(new_pos[1])>1 or math.abs(new_pos[2])>1 then 
+        result = 'f'
+    end
+
     if result == 'f' then 
         simSetObjectPosition(robot_hd,-1,current_pos)
         simSetObjectQuaternion(robot_hd,-1,current_ori)

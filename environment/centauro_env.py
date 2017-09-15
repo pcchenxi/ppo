@@ -40,7 +40,7 @@ observation_control = 8
 observation_space = 20 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
 action_space = 5 #len(action_list)
 
-REWARD_GOAL = 1
+REWARD_GOAL = 100
 REWARD_CRASH = -1
 
 class Simu_env():
@@ -144,10 +144,8 @@ class Simu_env():
         reward = -(dist - self.dist_pre)/0.1 - 0.01*action_cost
         # reward = np.exp(-dist)
 
-        if abs(robot_state[-1]) > 1 or abs(robot_state[-2]) > 1:
-            out = True
 
-        if found_pose == bytearray(b"f") or out:       # when collision or no pose can be found
+        if found_pose == bytearray(b"f"):       # when collision or no pose can be found
             # is_finish = True 
             # print('crashed!!')
             # reward = self.dist_pre
