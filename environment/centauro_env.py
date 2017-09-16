@@ -40,8 +40,8 @@ observation_control = 8
 observation_space = 20 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
 action_space = 5 #len(action_list)
 
-REWARD_GOAL = 100
-REWARD_CRASH = -1
+REWARD_GOAL = 10
+REWARD_CRASH = -10
 
 class Simu_env():
     def __init__(self, port_num):
@@ -105,6 +105,9 @@ class Simu_env():
         a[0] = action[0]
         a[1] = action[1] 
         # a[2] = action[2] 
+        
+        if action_space != 5:
+            action = a 
 
         _, _, _, _, found_pose = self.call_sim_function('centauro', 'step', action)
 
@@ -125,7 +128,7 @@ class Simu_env():
         return state_, reward, is_finish, ''
 
     def compute_reward(self, robot_state, action, found_pose):
-        # 0, 1,   2,  3, 4           -5,    -4, -3, -2, -1 
+        # 0,  1,  2,  3, 4           -5,    -4, -3, -2, -1 
         # tx, ty, tz, obs..........  theta,  h,  l,  rx, ry   
         is_finish = False
         out= False
@@ -139,21 +142,41 @@ class Simu_env():
         diff_z = abs(robot_z - target_z)
 
         dist = self.compute_dist(robot_state[0], robot_state[1])
+
+        min_dist_obs = 99
+        obs_dists = []
+        for i in range(3, len(robot_state[:-5]), 2):
+            obs_dist = self.compute_dist(robot_state[i], robot_state[i+1])
+            obs_dists.append(obs_dist)
+            if obs_dist < min_dist_obs:
+                min_dist_obs = obs_dist
+
+
         # reward = np.exp(-dist) - np.exp(-self.dist_pre)
         # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
-        reward = -(dist - self.dist_pre)/0.1 - 0.01*action_cost
+        reward = -(dist - self.dist_pre) #- 0.01*action_cost
         # reward = np.exp(-dist)
+        reward -= -0.001
 
-
-        if found_pose == bytearray(b"f"):       # when collision or no pose can be found
+        if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             # is_finish = True 
             # print('crashed!!')
             # reward = self.dist_pre
             reward = REWARD_CRASH
+            return reward, -1
+
+        if found_pose == bytearray(b"c"):       # when collision or no pose can be found
+            # is_finish = True 
+            # print('crashed!!')
+            # reward = self.dist_pre
+            for obs_dist in obs_dists:
+                # if min_dist_obs < 0.5 and min_dist_obs > 0.15:
+                if obs_dist < 0.5 and obs_dist > 0.15:
+                    reward += -(0.5 - obs_dist)/50
             return reward, 0
 
-        if dist < 0.2 and found_pose != bytearray(b"f") and diff_z < 0.02:
-            print('Goal' )
+        if dist < 0.2: # and diff_z < 0.02:
+            # print('Goal' )
             is_finish = True
             # reward += dist + REWARD_GOAL
             reward += 1 - np.exp(-dist) + REWARD_GOAL

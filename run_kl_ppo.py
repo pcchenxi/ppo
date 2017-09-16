@@ -28,10 +28,10 @@ the MuJoCo control tasks.
 import gym
 import numpy as np
 from gym import wrappers
-from src.policy import Policy
-from src.value_function import NNValueFunction
+from kl.policy import Policy
+from kl.value_function import NNValueFunction
 import scipy.signal
-from src.utils import Logger, Scaler
+from kl.utils import Logger, Scaler
 from datetime import datetime
 import os
 import argparse

@@ -1,4 +1,4 @@
-package.path=package.path .. ";/home/xi/workspace/pat_coady_ppo/environment/?.lua"
+package.path=package.path .. ";/home/xi/workspace/ppo/environment/?.lua"
 require("common_functions")
 require("ompl_functions")
 require("robot_control")

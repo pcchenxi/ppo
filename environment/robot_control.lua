@@ -1,4 +1,4 @@
-package.path=package.path .. ";/home/xi/workspace/pat_coady_ppo/environment/?.lua"
+package.path=package.path .. ";/home/xi/workspace/ppo/environment/?.lua"
 require("get_set")
 
 -- action: vx, vy, vw, vl
@@ -28,7 +28,7 @@ function is_valid()
 
     for i=1, #control_joint_hd_all, 1 do
         local joint_position = simGetObjectPosition(control_joint_hd_all[i], -1)
-        if joint_position[3] < 0.08 then
+        if joint_position[3] < 0.10 then
             valid = false
             reasom = 'body down '..i
             break
@@ -67,10 +67,10 @@ function do_action_rl(robot_hd, action)
 
     local new_pos=simGetObjectPosition(robot_hd,-1)
     if math.abs(new_pos[1])>1 or math.abs(new_pos[2])>1 then 
-        result = 'f'
+        result = 'a'
     end
 
-    if result == 'f' then 
+    if result ~= 't' then 
         simSetObjectPosition(robot_hd,-1,current_pos)
         simSetObjectQuaternion(robot_hd,-1,current_ori)
         set_joint_values(_joint_hds, current_joint_values)
@@ -145,7 +145,7 @@ function do_action(robot_hd, action)
     -- print('knee_target:', i, knee_x, knee_y)
 
     if knee_x == -1 or knee_x ~= knee_x then
-        return 'f'
+        return 'a'
     end
 
     local angle_hip = -math.atan2(knee_x, knee_y)
@@ -188,7 +188,7 @@ function do_action(robot_hd, action)
         return 't'
     else
         -- displayInfo('collide '..i..' '..foot_pos[1]..' '..foot_pos[2] )
-        return 'f'      
+        return 'c'      
     end
 end
 
