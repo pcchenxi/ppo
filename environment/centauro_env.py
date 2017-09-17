@@ -145,7 +145,7 @@ class Simu_env():
 
         min_dist_obs = 99
         obs_dists = []
-        for i in range(3, len(robot_state[:-5]), 2):
+        for i in range(3, len(robot_state[:-5]), 3):
             obs_dist = self.compute_dist(robot_state[i], robot_state[i+1])
             obs_dists.append(obs_dist)
             if obs_dist < min_dist_obs:
@@ -160,8 +160,9 @@ class Simu_env():
         
         time_reward = -0.015
         obs_reward = 0
-        if min_dist_obs < 0.5 and min_dist_obs > 0.15:
-            obs_reward = -(0.5 - obs_dist)/100
+        # if min_dist_obs < 0.5 and min_dist_obs > 0.15:
+        if min_dist_obs < 0.5:            
+            obs_reward = -(0.5 - min_dist_obs)/10
 
         reward = target_reward + time_reward + obs_reward
 
@@ -180,7 +181,7 @@ class Simu_env():
             # for obs_dist in obs_dists:
             #     if obs_dist < 0.5 and obs_dist > 0.15:
             #         reward += -(0.5 - obs_dist)/100
-            reward = -0.001 + time_reward + obs_reward
+            reward = -0.002 + time_reward + obs_reward
             return reward, 0
 
         if dist < 0.2: # and diff_z < 0.02:

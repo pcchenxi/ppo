@@ -171,6 +171,7 @@ class Worker(object):
             scale, offset = SCALER.get()
             scale[-1] = 1.0  # don't scale time step feature
             offset[-1] = 0.0  # don't offset time step feature
+            np.save("./model/rl/scaler", [scale, offset])
             for t in range(EP_LEN):
                 if not ROLLING_EVENT.is_set():                  # while global PPO is updating
                     ROLLING_EVENT.wait()                        # wait until PPO is updated
@@ -188,22 +189,6 @@ class Worker(object):
                 actions.append(action)
                 # print(action)
                 obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
-
-                # check if the robot played too much with the obstacle
-                # stuck_limit = 5
-                # max_diff = np.amax(np.abs(u_obs[-5:]-obs_[-5:]))                
-                # if max_diff == 0:
-                #     # print(max_diff)
-                #     # print(u_obs[-5:])
-                #     # print(obs_[-5:])       
-                #     reward -= 0.1         
-                #     stuck_num += 1
-                # else:
-                #     stuck_num == 0
-
-                # if stuck_num > stuck_limit:
-                #     reward -= -0.1
-                #     done = -1
 
                 rewards.append(reward)
                 obs = obs_
