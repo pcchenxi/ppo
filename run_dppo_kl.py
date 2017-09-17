@@ -22,7 +22,7 @@ N_WORKER = 4                 # parallel workers
 GAMMA = 0.98                 # reward discount factor
 LAM = 0.1
 
-BATCH_SIZE = 500
+BATCH_SIZE = 1000
 
 ###############################
 
@@ -162,10 +162,11 @@ class Worker(object):
             plt.show()
 
     def work(self):
-        global GLOBAL_EP, GLOBAL_UPDATE_COUNTER, BATCH_SIZE, SUCCESS_NUM, SCALER
+        global GLOBAL_EP, GLOBAL_UPDATE_COUNTER, BATCH_SIZE, SUCCESS_NUM, CRASH_NUM, SCALER
         while not COORD.should_stop():
             obs = self.env.reset()
             observes, actions, rewards, unscaled_obs = [], [], [], []
+            stuck_num = 0
             step = 0.0
             scale, offset = SCALER.get()
             scale[-1] = 1.0  # don't scale time step feature
@@ -177,6 +178,7 @@ class Worker(object):
                     observes, actions, rewards = [], [], []   # clear history buffer, use new policy to collect data
                     # break
 
+                u_obs = obs
                 obs = obs.astype(np.float32).reshape((1, -1))
                 # obs = np.append(obs, [[step]], axis=1)  # add time step feature
                 unscaled_obs.append(obs)
@@ -186,8 +188,24 @@ class Worker(object):
                 actions.append(action)
                 # print(action)
                 obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
-                rewards.append(reward)
 
+                # check if the robot played too much with the obstacle
+                # stuck_limit = 5
+                # max_diff = np.amax(np.abs(u_obs[-5:]-obs_[-5:]))                
+                # if max_diff == 0:
+                #     # print(max_diff)
+                #     # print(u_obs[-5:])
+                #     # print(obs_[-5:])       
+                #     reward -= 0.1         
+                #     stuck_num += 1
+                # else:
+                #     stuck_num == 0
+
+                # if stuck_num > stuck_limit:
+                #     reward -= -0.1
+                #     done = -1
+
+                rewards.append(reward)
                 obs = obs_
                 step += 1e-3  # increment time step feature
 
@@ -200,6 +218,7 @@ class Worker(object):
                         print('goal')
                         self.write_summary('Perf/ep_length', t)  
                     elif done == -1:
+                        CRASH_NUM += 1        
                         print('crash')
                         self.write_summary('Perf/ep_length', t)  
                     elif done == 0:
@@ -208,6 +227,7 @@ class Worker(object):
                         unscaled_obs.append(obs_)
                         obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_) 
+
                         print('unfinish')
                         
                     mean_reward = np.sum(rewards[:-1])
@@ -233,10 +253,11 @@ class Worker(object):
                     ep_length = 51
                     if GLOBAL_EP%ep_length == 0:
                         self.write_summary('Perf/Success Rate', SUCCESS_NUM/ep_length)  
+                        self.write_summary('Perf/Crash Rate', CRASH_NUM/ep_length)  
                         print('')      
                         print('success rate', SUCCESS_NUM, SUCCESS_NUM/ep_length)          
                         SUCCESS_NUM = 0       
-
+                        CRASH_NUM = 0
                         # if self.wid == 0:
                         #     self.varifly_values()
                                                         
@@ -250,7 +271,7 @@ if __name__ == '__main__':
     UPDATE_EVENT.clear()            # not update now
     ROLLING_EVENT.set()             # start to roll out
 
-    GLOBAL_UPDATE_COUNTER, GLOBAL_EP, SUCCESS_NUM = 1, 1, 0
+    GLOBAL_UPDATE_COUNTER, GLOBAL_EP, SUCCESS_NUM, CRASH_NUM = 1, 1, 0, 0
     INIT_DONE = False
 
     if MODE == 'training':

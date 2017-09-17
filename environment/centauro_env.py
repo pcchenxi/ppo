@@ -154,9 +154,12 @@ class Simu_env():
 
         # reward = np.exp(-dist) - np.exp(-self.dist_pre)
         # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
-        reward = -(dist - self.dist_pre) #- 0.01*action_cost
-        # reward = np.exp(-dist)
-        reward -= -0.001
+        target_reward = -(dist - self.dist_pre)/10 #- 0.01*action_cost
+        if target_reward < 0:
+            target_reward = 0
+        
+        time_reward = -0.015
+        reward = target_reward + time_reward
 
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             # is_finish = True 
@@ -169,18 +172,22 @@ class Simu_env():
             # is_finish = True 
             # print('crashed!!')
             # reward = self.dist_pre
-            for obs_dist in obs_dists:
-                # if min_dist_obs < 0.5 and min_dist_obs > 0.15:
-                if obs_dist < 0.5 and obs_dist > 0.15:
-                    reward += -(0.5 - obs_dist)/50
+
+            # if min_dist_obs < 0.5 and min_dist_obs > 0.15:
+            #     reward += -(0.5 - obs_dist)/200
+
+            # for obs_dist in obs_dists:
+            #     if obs_dist < 0.5 and obs_dist > 0.15:
+            #         reward += -(0.5 - obs_dist)/100
+            reward = -0.001 + time_reward
             return reward, 0
 
         if dist < 0.2: # and diff_z < 0.02:
             # print('Goal' )
             is_finish = True
             # reward += dist + REWARD_GOAL
-            reward += 1 - np.exp(-dist) + REWARD_GOAL
-            # reward = REWARD_GOAL
+            # reward += 1 - np.exp(-dist) + REWARD_GOAL
+            reward = REWARD_GOAL
             return reward, 1
 
             # reward += dist * 100
