@@ -20,7 +20,7 @@ EP_MAX = 900000000
 EP_LEN = 40
 N_WORKER = 4                 # parallel workers
 GAMMA = 0.98                 # reward discount factor
-LAM = 0.0
+LAM = 0.1
 
 BATCH_SIZE = 1000
 

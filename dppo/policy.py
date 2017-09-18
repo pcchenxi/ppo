@@ -167,7 +167,7 @@ class Policy(object):
 
         loss = -tf.reduce_mean(tf.minimum(        # clipped surrogate objective
             surr,
-            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph))
+            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph) + 0.001 * self.entropy)
 
         return loss
 
