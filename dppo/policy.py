@@ -28,7 +28,7 @@ class Policy(object):
         self.beta = 1.0  # dynamically adjusted D_KL loss multiplier
         self.eta = 50  # multiplier for D_KL-kl_targ hinge-squared loss
         self.kl_targ = kl_targ
-        self.epochs = 10
+        self.epochs = 5
         self.lr = None
         self.lr_multiplier = 1.0  # dynamically adjust lr when D_KL out of control
         self.obs_dim = obs_dim
@@ -72,20 +72,16 @@ class Policy(object):
             hid3_size = self.act_dim * 10  # 10 empirically determined
             hid2_size = int(np.sqrt(hid1_size * hid3_size))
             # heuristic to set learning rate based on NN size (tuned on 'Hopper-v1')
-            self.lr = 9e-5 / np.sqrt(hid2_size)  # 9e-4 empirically determined
+            self.lr = 9e-4 / np.sqrt(hid2_size)  # 9e-4 empirically determined
             # 3 hidden layers with tanh activations
             out = tf.layers.dense(self.obs_ph, hid1_size, tf.tanh,
-                                kernel_initializer=tf.random_normal_initializer(
-                                    stddev=np.sqrt(1 / self.obs_dim)), name="p_h1")
+                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / self.obs_dim)), name="p_h1")
             out = tf.layers.dense(out, hid2_size, tf.tanh,
-                                kernel_initializer=tf.random_normal_initializer(
-                                    stddev=np.sqrt(1 / hid1_size)), name="p_h2")
+                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid1_size)), name="p_h2")
             out = tf.layers.dense(out, hid3_size, tf.tanh,
-                                kernel_initializer=tf.random_normal_initializer(
-                                    stddev=np.sqrt(1 / hid2_size)), name="p_h3")
+                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid2_size)), name="p_h3")
             self.means = tf.layers.dense(out, self.act_dim,
-                                        kernel_initializer=tf.random_normal_initializer(
-                                            stddev=np.sqrt(1 / hid3_size)), name="means")
+                                        kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid3_size)), name="means")
 
         # logvar_speed is used to 'fool' gradient descent into making faster updates
         # to log-variances. heuristic sets logvar_speed based on network size.
@@ -167,7 +163,7 @@ class Policy(object):
 
         loss = -tf.reduce_mean(tf.minimum(        # clipped surrogate objective
             surr,
-            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph) + 0.001 * self.entropy)
+            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph))
 
         return loss
 

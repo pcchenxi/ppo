@@ -40,9 +40,9 @@ class PPO(object):
 
         self.summary_writer = tf.summary.FileWriter('data/log', self.sess.graph)
 
-        kl_targ = 0.009
+        kl_targ = 0.004
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
-        self.policy = Policy(S_DIM, A_DIM, kl_targ, 'clip', self.sess, self.summary_writer)
+        self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
 
         #############################################################################################
         self.sess.run(tf.global_variables_initializer())
@@ -123,20 +123,38 @@ class Worker(object):
         self.ppo.summary_writer.add_summary(summary, GLOBAL_EP)
         self.ppo.summary_writer.flush()   
 
-    def varifly_values(self):
+    def run_ep(self, offset, scale):
+        obs = self.env.reset()
+
+        for t in range(300):
+            obs = obs.astype(np.float32).reshape((1, -1))
+            obs = (obs - offset) * scale  # center and scale observations
+            action = self.ppo.choose_action(obs)
+            obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
+
+            if done != 0:
+                break
+
+    def varifly_values(self, scale, offset):
         global MODE, GLOBAL_EP
         grid_size = 0.5        
         img_size = int(2/grid_size)
         map_shift = 1
         img = np.zeros((img_size, img_size), np.float32)
         values = []
+        # scalar = np.load("./model/rl/scaler.npy")
+        # scale, offset = scalar[0], scalar[1]
         for i in np.arange(-1, 1, grid_size):
             for j in np.arange(-1, 1, grid_size):
                 self.env.call_sim_function('centauro', 'move_robot', [i, j])
-                s, r, done, info = self.env.step([0,0,0,0,0])
-                value = self.ppo.get_v(s)[0, 0]
 
-                # value = np.clip(value, -1, 2)
+                obs, reward, done, _ = self.env.step([0,0,0,0,0])
+                obs = obs.astype(np.float32).reshape((1, -1))
+                # obs = (obs - offset) * scale  # center and scale observations
+
+                value = self.ppo.get_v(obs)
+
+                # value = np.clip(value, -0.1, 0.5)
                 # if value > 1:
                 #     print ('state', s[0], s[1], value)
                 x = i + map_shift
@@ -146,24 +164,28 @@ class Worker(object):
                 # print(i, j, row, col)
                 img[row, col] = value #(value+1)/2 * 255
                 values.append(value)
+                # print(value)
+                # self.run_ep(offset, scale)
                 
-        summary = tf.Summary()
-        summary.value.add(tag='Perf/Average Net_Value', simple_value=float(np.mean(values)))
-        self.ppo.summary_writer.add_summary(summary, GLOBAL_EP)
-        self.ppo.summary_writer.flush()   
+        # summary = tf.Summary()
+        # summary.value.add(tag='Perf/Average Net_Value', simple_value=float(np.mean(values)))
+        # self.ppo.summary_writer.add_summary(summary, GLOBAL_EP)
+        # self.ppo.summary_writer.flush()   
 
         print(img)
         if MODE == 'testing':
-            img = (img + 2.5)/5 * 255
+            img = (img - img.min())/(img.max()-img.min()) * 255
             plt.clf()
             plt.imshow(img, cmap='gray')
-            # plt.imshow(decoded_grid[0,:,:,0], cmap='gray')
             # plt.pause(0.001)
             plt.show()
 
     def work(self):
         global GLOBAL_EP, GLOBAL_UPDATE_COUNTER, BATCH_SIZE, SUCCESS_NUM, CRASH_NUM, SCALER
         while not COORD.should_stop():
+            if GLOBAL_EP%11 == 0 and self.wid == 0:
+                self.varifly_values(scale, offset)     
+
             obs = self.env.reset()
             observes, actions, rewards, unscaled_obs = [], [], [], []
             stuck_num = 0
@@ -183,7 +205,7 @@ class Worker(object):
                 obs = obs.astype(np.float32).reshape((1, -1))
                 # obs = np.append(obs, [[step]], axis=1)  # add time step feature
                 unscaled_obs.append(obs)
-                obs = (obs - offset) * scale  # center and scale observations
+                # obs = (obs - offset) * scale  # center and scale observations
                 observes.append(obs)
                 action = self.ppo.choose_action(obs)
                 actions.append(action)
@@ -213,12 +235,12 @@ class Worker(object):
                         obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_) 
 
-                        print('unfinish')
-                        
+                        # print('unfinish') 
+                    
                     mean_reward = np.sum(rewards[:-1])
                     self.write_summary('Perf/mean_reward', mean_reward)  
                     
-                    bs, ba, br, bus = np.concatenate(observes), np.concatenate(actions), np.array(rewards, dtype=np.float64), np.concatenate(unscaled_obs)
+                    bs, ba, br, bus = np.concatenate(observes), np.concatenate(actions), np.array(rewards, dtype=np.float64), np.concatenate(unscaled_obs)  
 
                     trajectory = {'observes': bs,
                                 'actions': ba,
@@ -239,15 +261,12 @@ class Worker(object):
                     if GLOBAL_EP%ep_length == 0:
                         self.write_summary('Perf/Success Rate', SUCCESS_NUM/ep_length)  
                         self.write_summary('Perf/Crash Rate', CRASH_NUM/ep_length)  
-                        print('')      
-                        print('success rate', SUCCESS_NUM, SUCCESS_NUM/ep_length)          
+                        # print('')      
+                        # print('success rate', SUCCESS_NUM, SUCCESS_NUM/ep_length)          
                         SUCCESS_NUM = 0       
                         CRASH_NUM = 0
-                        # if self.wid == 0:
-                        #     self.varifly_values()
-                                                        
+
                     if done!= 0:
-                        # GLOBAL_EP += 1
                         break
 
 if __name__ == '__main__':
@@ -279,7 +298,6 @@ if __name__ == '__main__':
 
     # checking value function
     if MODE == 'testing':
-        env = centauro_env.Simu_env(20000)
-        worker = Worker(env, 0)
+        worker = Worker(0)
         worker.ppo.load_model()
         worker.varifly_values()

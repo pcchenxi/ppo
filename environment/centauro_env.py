@@ -40,13 +40,14 @@ observation_control = 8
 observation_space = 20 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
 action_space = 5 #len(action_list)
 
-REWARD_GOAL = 10
-REWARD_CRASH = -10
+REWARD_GOAL = 40
+REWARD_CRASH = -40
 
 class Simu_env():
     def __init__(self, port_num):
         self.port_num = port_num
         self.dist_pre = 0
+        self.obs_dist_pre = 0
         self.reward_gap = 0.1
         self.next_reward_dist = 0
         self.ep_init = False
@@ -84,12 +85,15 @@ class Simu_env():
     def reset(self):
         # print('reset')
         self.dist_pre = 1000
-
+        self.obs_dist_pre = 0
         res, retInts, retFloats, retStrings, retBuffer = self.call_sim_function('centauro', 'reset', [observation_range*2])        
         state, reward, is_finish, info = self.step([0, 0, 0, 0, 0])
 
         dist = self.compute_dist(state[0], state[1])
+        # _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
         self.dist_pre = dist
+        # self.obs_dist_pre = min_dist[0]
+
         self.ep_init = False
         # self.next_reward_dist = dist - self.reward_gap
         # self.next_reward_dist = dist
@@ -130,7 +134,8 @@ class Simu_env():
     def compute_reward(self, robot_state, action, found_pose):
         # 0,  1,  2,  3, 4           -5,    -4, -3, -2, -1 
         # tx, ty, tz, obs..........  theta,  h,  l,  rx, ry   
-        is_finish = False
+        _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
+
         out= False
         reward = 0
 
@@ -143,50 +148,36 @@ class Simu_env():
 
         dist = self.compute_dist(robot_state[0], robot_state[1])
 
-        min_dist_obs = 99
-        obs_dists = []
-        for i in range(3, len(robot_state[:-5]), 3):
-            obs_dist = self.compute_dist(robot_state[i], robot_state[i+1])
-            obs_dists.append(obs_dist)
-            if obs_dist < min_dist_obs:
-                min_dist_obs = obs_dist
-
-
         # reward = np.exp(-dist) - np.exp(-self.dist_pre)
         # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
-        target_reward = -(dist - self.dist_pre)/10 #- 0.01*action_cost
+        target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
         if target_reward < 0:
             target_reward = 0
-        
-        time_reward = -0.015
-        obs_reward = 0
-        # if min_dist_obs < 0.5 and min_dist_obs > 0.15:
-        if min_dist_obs < 0.5:            
-            obs_reward = -(0.5 - min_dist_obs)/5
+        time_reward = -0.15
+        obs_reward = -(0.2 - min_dist[0])  
 
-        reward = target_reward + time_reward + obs_reward
-
+        # reward = (target_reward + obs_reward + time_reward)/10
+        reward = -1
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
-            # is_finish = True 
             # print('crashed!!')
             # reward = self.dist_pre
             reward = REWARD_CRASH
             return reward, -1
 
         if found_pose == bytearray(b"c"):       # when collision or no pose can be found
-            # is_finish = True 
             # print('crashed!!')
             # reward = self.dist_pre
 
             # for obs_dist in obs_dists:
             #     if obs_dist < 0.5 and obs_dist > 0.15:
             #         reward += -(0.5 - obs_dist)/100
-            reward = -0.02 + time_reward + obs_reward
-            return reward, 0
+            # reward = -0.02 + time_reward + obs_reward
+            # reward = REWARD_CRASH
+            reward = REWARD_CRASH
+            return reward, -1
 
         if dist < 0.2: # and diff_z < 0.02:
             # print('Goal' )
-            is_finish = True
             # reward += dist + REWARD_GOAL
             # reward += 1 - np.exp(-dist) + REWARD_GOAL
             reward = REWARD_GOAL
@@ -197,6 +188,7 @@ class Simu_env():
 
         # print(dist, self.dist_pre, reward)
         self.dist_pre = dist
+        self.obs_dist_pre = min_dist[0]
         return reward, 0
 
 

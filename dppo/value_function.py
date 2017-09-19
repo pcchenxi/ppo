@@ -26,7 +26,7 @@ class NNValueFunction(object):
         self.replay_buffer_x = None
         self.replay_buffer_y = None
         self.obs_dim = obs_dim
-        self.epochs = 10
+        self.epochs = 5
         self.lr = None  # learning rate set in _build_graph()
         self._build_graph()
 

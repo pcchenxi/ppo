@@ -5,6 +5,19 @@ require("robot_control")
 
 -- simSetThreadSwitchTiming(2) 
 -- simExtRemoteApiStart(19999)
+
+function get_minimum_obs_dist(inInts,inFloats,inStrings,inBuffer)
+    local threshold = 0.2
+    local res, data = simCheckDistance(_collection_robot_hd, _collection_hd, threshold)
+    if data == nil then 
+        dist = threshold
+    else 
+        dist = data[7]
+    end
+    -- print(dist)    
+    return {}, {dist}, {}, ''
+end
+
 function reset(inInts,inFloats,inStrings,inBuffer)
     local radius = inFloats[1]
     init(radius, 1)
@@ -158,6 +171,8 @@ function start()
     _start_t_ori = simGetObjectQuaternion(_robot_hd,-1)
 
     _collection_hd = simGetCollectionHandle('obstacle_all')
+    _collection_robot_hd = simGetCollectionHandle('centauro_mesh')
+
     _obstacles_hds = simGetCollectionObjects(_collection_hd)
 
     _obstacle_dynamic_collection = simGetCollectionHandle('obstacle_dynamic')
@@ -216,11 +231,13 @@ function sample_initial_poses(radius, resample)
         return 0
     end
 
-    inside_obs_index = sample_obstacle_position()
+    if resample == 1 then 
+        inside_obs_index = sample_obstacle_position()
+    end 
 
     local robot_pos = {}
-    robot_pos[1] = 0 --(math.random() - 0.5) * 2 *0.7 --(math.random() - 0.5) * 2 *1
-    robot_pos[2] = -0.8 --(math.random() - 0.5) * 2 *0.7
+    robot_pos[1] = (math.random() - 0.5) * 2 
+    robot_pos[2] = (math.random() - 0.5) * 2 
     robot_pos[3] = _start_pos[3]
 
     local robot_ori = {}
@@ -236,17 +253,23 @@ function sample_initial_poses(radius, resample)
     simSetObjectPosition(_fake_robot_hd,-1,robot_pos)
     simSetObjectQuaternion(_fake_robot_hd, -1, robot_ori)
     local res_robot = simCheckCollision(_fake_robot_hd, _collection_hd)
+    -- local res_robot = 0
 
     local target_pos = {}
-    target_pos[1] = (math.random() - 0.5) * 2 
-    target_pos[2] = (math.random() - 0.5) * 2
-    target_pos[3] = (math.random() - 0.5) * 2 * 0.1 + 0.4
-
     local target_ori = {} 
-    target_ori[1] = _start_ori[1] 
-    target_ori[2] = _start_ori[2]
-    target_ori[3] = (math.random() - 0.5) * 2 * math.pi
-    target_ori[4] = _start_ori[4]
+    if resample == -1 then 
+        target_pos = _pre_target_pos
+        target_ori = _pre_target_ori
+    else 
+        target_pos[1] = (math.random() - 0.5) * 2
+        target_pos[2] = (math.random() - 0.5) * 2
+        target_pos[3] = (math.random() - 0.5) * 2 * 0.1 + 0.4
+
+        target_ori[1] = _start_ori[1] 
+        target_ori[2] = _start_ori[2]
+        target_ori[3] = (math.random() - 0.5) * 2 * math.pi
+        target_ori[4] = _start_ori[4]
+    end
 
     simSetObjectPosition(_target_hd,-1,target_pos)
     simSetObjectQuaternion(_target_hd, -1, target_ori)
@@ -281,6 +304,12 @@ function sample_initial_poses(radius, resample)
 end
 
 function init(radius, resample)
+    resample = 1
+    -- global_counter = global_counter + 1
+    -- if global_counter%30 == 0 then 
+    --     resample = 1
+    -- end
+
     local init_value = 1
     while (init_value ~= 0) do
         init_value = sample_initial_poses(radius, resample)
@@ -296,6 +325,7 @@ function init(radius, resample)
 end
 
 initialized = false
+global_counter = 0
 
 -- get_obstacle_info(nil, nil, nil, nil)
 start()
@@ -326,7 +356,7 @@ init(1.5, 1)
 
 while simGetSimulationState()~=sim_simulation_advancing_abouttostop do
     -- do something in here
-    simSwitchThread()
+    -- simSwitchThread()
 end
 
 
