@@ -19,11 +19,11 @@ def add_disc_sum_rew(trajectories, gamma):
         None (mutates trajectories dictionary to add 'disc_sum_rew')
     """
     for trajectory in trajectories:
-        rewards = trajectory['rewards']
-        # if gamma < 0.999:  # don't scale for gamma ~= 1
-        #     rewards = trajectory['rewards'] * (1 - gamma)
-        # else:
-        #     rewards = trajectory['rewards']
+        # rewards = trajectory['rewards']
+        if gamma < 0.999:  # don't scale for gamma ~= 1
+            rewards = trajectory['rewards'] * (1 - gamma)
+        else:
+            rewards = trajectory['rewards']
         disc_sum_rew = discount(rewards, gamma)
         trajectory['disc_sum_rew'] = disc_sum_rew
 
@@ -61,11 +61,11 @@ def add_gae(trajectories, gamma, lam):
         None (mutates trajectories dictionary to add 'advantages')
     """
     for trajectory in trajectories:
-        rewards = trajectory['rewards']
-        # if gamma < 0.999:  # don't scale for gamma ~= 1
-        #     rewards = trajectory['rewards'] * (1 - gamma)
-        # else:
-        #     rewards = trajectory['rewards']
+        # rewards = trajectory['rewards']
+        if gamma < 0.999:  # don't scale for gamma ~= 1
+            rewards = trajectory['rewards'] * (1 - gamma)
+        else:
+            rewards = trajectory['rewards']
         values = trajectory['values']
         # temporal differences
 

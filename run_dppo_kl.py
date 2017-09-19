@@ -17,7 +17,7 @@ MODE = 'training'
 # MODE = 'testing'
 
 EP_MAX = 900000000
-EP_LEN = 40
+EP_LEN = 150
 N_WORKER = 4                 # parallel workers
 GAMMA = 0.98                 # reward discount factor
 LAM = 0.1
@@ -150,7 +150,7 @@ class Worker(object):
 
                 obs, reward, done, _ = self.env.step([0,0,0,0,0])
                 obs = obs.astype(np.float32).reshape((1, -1))
-                # obs = (obs - offset) * scale  # center and scale observations
+                obs = (obs - offset) * scale  # center and scale observations
 
                 value = self.ppo.get_v(obs)
 
@@ -183,8 +183,8 @@ class Worker(object):
     def work(self):
         global GLOBAL_EP, GLOBAL_UPDATE_COUNTER, BATCH_SIZE, SUCCESS_NUM, CRASH_NUM, SCALER
         while not COORD.should_stop():
-            if GLOBAL_EP%11 == 0 and self.wid == 0:
-                self.varifly_values(scale, offset)     
+            # if GLOBAL_EP%11 == 0 and self.wid == 0:
+            #     self.varifly_values(scale, offset)     
 
             obs = self.env.reset()
             observes, actions, rewards, unscaled_obs = [], [], [], []
@@ -205,7 +205,7 @@ class Worker(object):
                 obs = obs.astype(np.float32).reshape((1, -1))
                 # obs = np.append(obs, [[step]], axis=1)  # add time step feature
                 unscaled_obs.append(obs)
-                # obs = (obs - offset) * scale  # center and scale observations
+                obs = (obs - offset) * scale  # center and scale observations
                 observes.append(obs)
                 action = self.ppo.choose_action(obs)
                 actions.append(action)

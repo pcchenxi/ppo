@@ -134,27 +134,27 @@ class Simu_env():
     def compute_reward(self, robot_state, action, found_pose):
         # 0,  1,  2,  3, 4           -5,    -4, -3, -2, -1 
         # tx, ty, tz, obs..........  theta,  h,  l,  rx, ry   
-        _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
+        # _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
 
-        out= False
-        reward = 0
+        # out= False
+        # reward = 0
 
-        action = np.asarray(action)
-        action_cost = np.sum(action*action)
+        # action = np.asarray(action)
+        # action_cost = np.sum(action*action)
 
-        robot_z = robot_state[-4]
-        target_z = robot_state[-2]
-        diff_z = abs(robot_z - target_z)
+        # robot_z = robot_state[-4]
+        # target_z = robot_state[-2]
+        # diff_z = abs(robot_z - target_z)
 
         dist = self.compute_dist(robot_state[0], robot_state[1])
 
-        # reward = np.exp(-dist) - np.exp(-self.dist_pre)
-        # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
-        target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
-        if target_reward < 0:
-            target_reward = 0
-        time_reward = -0.15
-        obs_reward = -(0.2 - min_dist[0])  
+        # # reward = np.exp(-dist) - np.exp(-self.dist_pre)
+        # # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
+        # target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
+        # if target_reward < 0:
+        #     target_reward = 0
+        # time_reward = -0.15
+        # obs_reward = -(0.2 - min_dist[0])  
 
         # reward = (target_reward + obs_reward + time_reward)/10
         reward = -1
@@ -188,7 +188,7 @@ class Simu_env():
 
         # print(dist, self.dist_pre, reward)
         self.dist_pre = dist
-        self.obs_dist_pre = min_dist[0]
+        # self.obs_dist_pre = min_dist[0]
         return reward, 0
 
 

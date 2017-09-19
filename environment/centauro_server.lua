@@ -73,8 +73,10 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
 
     -- x, y, theta, h, l,   tx, ty, t_theta,   t_h, t_l
     local state = {}
-    state[1] = target_pos[1]
-    state[2] = target_pos[2]
+    local target_angle = math.atan2(target_pos[1], target_pos[2])
+    local target_dist = math.sqrt(target_pos[1]*target_pos[1] + target_pos[2]*target_pos[2])
+    state[1] = target_angle
+    state[2] = target_dist
     state[3] = target_pos[3] - 0.4
 
     -- state[1] = pos[1]
@@ -99,8 +101,10 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
         local y = math.abs(obs_pos_global[2])
 
         if x < 2.5 and y < 2.5 then   
-            state[#state+1] = obs_pos[1]
-            state[#state+1] = obs_pos[2]
+            local obs_angle = math.atan2(obs_pos[1], obs_pos[2])
+            local obs_dist = math.sqrt(obs_pos[1]*obs_pos[1] + obs_pos[2]*obs_pos[2])        
+            state[#state+1] = target_angle
+            state[#state+1] = target_dist
             state[#state+1] = obs_pos[3] 
         end
     end
@@ -109,8 +113,8 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     state[#state+1] = pos[3]
     state[#state+1] = leg_l
 
-    state[#state+1] = pos[1]
-    state[#state+1] = pos[2]
+    state[#state+1] = 1 - math.abs(pos[1])
+    state[#state+1] = 1 - math.abs(pos[2])
 
     -- print ('in get robot state:', #state[3])
     return {}, state, {}, ''
