@@ -40,16 +40,17 @@ observation_control = 8
 observation_space = 20 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
 action_space = 5 #len(action_list)
 
-REWARD_GOAL = 40
-REWARD_CRASH = -40
+REWARD_GOAL = 1
+REWARD_CRASH = -1
 
 class Simu_env():
-    def __init__(self, port_num):
+    def __init__(self, port_num, max_length):
         self.port_num = port_num
         self.dist_pre = 0
         self.obs_dist_pre = 0
         self.reward_gap = 0.1
         self.next_reward_dist = 0
+        self.max_length = max_length
         self.ep_init = False
 
         self.init_step = 0
@@ -150,14 +151,14 @@ class Simu_env():
 
         # # reward = np.exp(-dist) - np.exp(-self.dist_pre)
         # # reward = np.exp(-dist) - 0.1*obs_cost*obs_cost - 0.001*action_cost
-        # target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
+        target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
         # if target_reward < 0:
         #     target_reward = 0
         # time_reward = -0.15
         # obs_reward = -(0.2 - min_dist[0])  
 
         # reward = (target_reward + obs_reward + time_reward)/10
-        reward = -1
+        reward = REWARD_CRASH/self.max_length + target_reward
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             # print('crashed!!')
             # reward = self.dist_pre

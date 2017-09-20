@@ -37,27 +37,24 @@ class NNValueFunction(object):
         self.val_ph = tf.placeholder(tf.float32, (None,), 'val_valfunc')
         # hid1 layer size is 10x obs_dim, hid3 size is 10, and hid2 is geometric mean
         hid1_size = self.obs_dim * 10  # 10 chosen empirically on 'Hopper-v1'
-        hid3_size = 5  # 5 chosen empirically on 'Hopper-v1'
+        hid3_size = 15  # 5 chosen empirically on 'Hopper-v1'
         hid2_size = int(np.sqrt(hid1_size * hid3_size))
         # heuristic to set learning rate based on NN size (tuned on 'Hopper-v1')
-        self.lr = 1e-2 / np.sqrt(hid2_size)  # 1e-3 empirically determined
+        self.lr = 1e-3 / np.sqrt(hid2_size)  # 1e-3 empirically determined
         print('Value Params -- h1: {}, h2: {}, h3: {}, lr: {:.3g}'
                 .format(hid1_size, hid2_size, hid3_size, self.lr))
         # 3 hidden layers with tanh activations
 
         with tf.variable_scope('value'):
             out = tf.layers.dense(self.obs_ph, hid1_size, tf.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(
-                                      stddev=np.sqrt(1 / self.obs_dim)), name="v_h1")
+                                  kernel_initializer=tf.contrib.layers.xavier_initializer() )
+                                  #tf.random_normal_initializer(stddev=np.sqrt(1 / self.obs_dim)), name="v_h1")
             out = tf.layers.dense(out, hid2_size, tf.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(
-                                      stddev=np.sqrt(1 / hid1_size)), name="v_h2")
+                                  kernel_initializer=tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid1_size)), name="v_h2")
             out = tf.layers.dense(out, hid3_size, tf.tanh,
-                                  kernel_initializer=tf.random_normal_initializer(
-                                      stddev=np.sqrt(1 / hid2_size)), name="v_h3")
+                                  kernel_initializer=tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid2_size)), name="v_h3")
             out = tf.layers.dense(out, 1,
-                                  kernel_initializer=tf.random_normal_initializer(
-                                      stddev=np.sqrt(1 / hid3_size)), name='output')
+                                  kernel_initializer=tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid3_size)), name='output')
 
         self.out = tf.squeeze(out)
         self.loss = tf.reduce_mean(tf.square(self.out - self.val_ph))  # squared loss

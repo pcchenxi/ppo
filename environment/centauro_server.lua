@@ -310,7 +310,7 @@ end
 function init(radius, resample)
     resample = 1
     -- global_counter = global_counter + 1
-    -- if global_counter%30 == 0 then 
+    -- if global_counter%300000 == 0 then 
     --     resample = 1
     -- end
 

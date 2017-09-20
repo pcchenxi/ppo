@@ -17,10 +17,10 @@ MODE = 'training'
 # MODE = 'testing'
 
 EP_MAX = 900000000
-EP_LEN = 150
+EP_LEN = 100
 N_WORKER = 4                 # parallel workers
-GAMMA = 0.98                 # reward discount factor
-LAM = 0.1
+GAMMA = 0.995                 # reward discount factor
+LAM = 0.98
 
 BATCH_SIZE = 1000
 
@@ -40,7 +40,7 @@ class PPO(object):
 
         self.summary_writer = tf.summary.FileWriter('data/log', self.sess.graph)
 
-        kl_targ = 0.004
+        kl_targ = 0.002
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
         self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
 
@@ -76,7 +76,7 @@ class PPO(object):
                         trajectories.append(t)
 
                 unscaled = np.concatenate([t['unscaled_obs'] for t in trajectories])
-                SCALER.update(unscaled) 
+                # SCALER.update(unscaled) 
 
                 if INIT_DONE == False:
                     pf.add_value(trajectories, self.val_func)  # add estimated values to episodes
@@ -110,7 +110,7 @@ class PPO(object):
 class Worker(object):
     def __init__(self, wid):
         self.wid = wid
-        self.env = centauro_env.Simu_env(20000 + wid)
+        self.env = centauro_env.Simu_env(20000 + wid, EP_LEN)
         self.ppo = GLOBAL_PPO
 
 
@@ -190,10 +190,14 @@ class Worker(object):
             observes, actions, rewards, unscaled_obs = [], [], [], []
             stuck_num = 0
             step = 0.0
-            scale, offset = SCALER.get()
-            scale[-1] = 1.0  # don't scale time step feature
-            offset[-1] = 0.0  # don't offset time step feature
-            np.save("./model/rl/scaler", [scale, offset])
+            # scale, offset = SCALER.get()
+            # scale[-1] = 1.0  # don't scale time step feature
+            # offset[-1] = 0.0  # don't offset time step feature
+            # np.save("./model/rl/scaler", [scale, offset])
+
+            scalar = np.load("./model/rl/scaler.npy")
+            scale, offset = scalar[0], scalar[1]
+
             for t in range(EP_LEN):
                 if not ROLLING_EVENT.is_set():                  # while global PPO is updating
                     ROLLING_EVENT.wait()                        # wait until PPO is updated

@@ -157,13 +157,13 @@ class Policy(object):
         openai's approach
         See: https://arxiv.org/pdf/1707.06347.pdf
         """
-        EPSILON = 0.2
-        ratio = tf.exp(self.logp - self.logp_old)
-        surr = self.advantages_ph * ratio
+        EPSILON = 0.02
+        self.ratio = tf.exp(self.logp - self.logp_old)
+        surr = self.advantages_ph * self.ratio
 
         loss = -tf.reduce_mean(tf.minimum(        # clipped surrogate objective
             surr,
-            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph))
+            tf.clip_by_value(self.ratio, 1. - EPSILON, 1. + EPSILON) * self.advantages_ph))
 
         return loss
 
@@ -188,7 +188,7 @@ class Policy(object):
             self.loss = self._clip_loss()
 
         optimizer = tf.train.AdamOptimizer(self.lr_ph)
-        self.train_op = optimizer.minimize(self.loss)
+        self.train_op = optimizer.minimize(self.loss - 0.0*self.entropy)
 
 
     def sample(self, obs):
@@ -237,12 +237,12 @@ class Policy(object):
         else:
             for e in range(self.epochs):
                 self.sess.run(self.train_op, feed_dict)
-                loss, kl, entropy = self.sess.run([self.loss, self.kl, self.entropy], feed_dict)
-
+                loss, kl, entropy, ratio = self.sess.run([self.loss, self.kl, self.entropy, self.ratio], feed_dict)
         summary = tf.Summary()
         summary.value.add(tag='Loss/PolicyLoss', simple_value=float(loss))
         summary.value.add(tag='Other/PolicyEntropy', simple_value=float(entropy))
         summary.value.add(tag='Other/KL', simple_value=float(kl))
+        # summary.value.add(tag='Other/ratio', simple_value=float(np.mean(ratio)))
         # summary.value.add(tag='Loss/Beta', simple_value=float(self.beta))
         # summary.value.add(tag='Loss/lr_multiplier', simple_value=float(self.lr_multiplier))
         self.summary_writer.add_summary(summary, episode)
