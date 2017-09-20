@@ -188,7 +188,7 @@ class Policy(object):
             self.loss = self._clip_loss()
 
         optimizer = tf.train.AdamOptimizer(self.lr_ph)
-        self.train_op = optimizer.minimize(self.loss - 0.0*self.entropy)
+        self.train_op = optimizer.minimize(self.loss - 0.05*self.entropy)
 
 
     def sample(self, obs):

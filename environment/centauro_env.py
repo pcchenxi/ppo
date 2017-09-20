@@ -158,7 +158,7 @@ class Simu_env():
         # obs_reward = -(0.2 - min_dist[0])  
 
         # reward = (target_reward + obs_reward + time_reward)/10
-        reward = REWARD_CRASH/self.max_length + target_reward
+        reward = REWARD_CRASH/self.max_length
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             # print('crashed!!')
             # reward = self.dist_pre

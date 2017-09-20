@@ -22,7 +22,7 @@ N_WORKER = 4                 # parallel workers
 GAMMA = 0.995                 # reward discount factor
 LAM = 0.98
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 20000
 
 ###############################
 
@@ -40,7 +40,7 @@ class PPO(object):
 
         self.summary_writer = tf.summary.FileWriter('data/log', self.sess.graph)
 
-        kl_targ = 0.002
+        kl_targ = 0.0003
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
         self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
 
@@ -223,7 +223,8 @@ class Worker(object):
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
    
                 # print('GLOBAL_UPDATE_COUNTER', GLOBAL_UPDATE_COUNTER/BATCH_SIZE, end="\r")
-                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:
+                # if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:                
+                if t == EP_LEN - 1 or done!= 0:
                     if done == 1:
                         SUCCESS_NUM += 1
                         print('goal')
@@ -239,7 +240,7 @@ class Worker(object):
                         obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_) 
 
-                        # print('unfinish') 
+                        print('unfinish') 
                     
                     mean_reward = np.sum(rewards[:-1])
                     self.write_summary('Perf/mean_reward', mean_reward)  
@@ -253,7 +254,8 @@ class Worker(object):
 
                     observes, actions, rewards, unscaled_obs = [], [], [], []
                     QUEUE.put(trajectory)          # put data in the queue
-                    if GLOBAL_UPDATE_COUNTER >= BATCH_SIZE:
+                    # if GLOBAL_UPDATE_COUNTER >= BATCH_SIZE:
+                    if  GLOBAL_EP%21== 0: 
                         ROLLING_EVENT.clear()       # stop collecting data
                         UPDATE_EVENT.set()          # globalPPO update
 
