@@ -205,7 +205,7 @@ function sample_obstacle_position()
         local x = math.abs(obs_pos[1])
         local y = math.abs(obs_pos[2])
 
-        local bound_x = 1
+        local bound_x = 2
         local bound_y = 2
         if x < 2.5 and y < 2.5 then 
             inside_obs_index[#inside_obs_index +1] = i
@@ -254,14 +254,6 @@ function sample_initial_poses(radius, resample)
     robot_ori[2] = _start_ori[2]
     robot_ori[3] = (math.random() - 0.5) *2 * math.pi    --_start_ori[3]
     robot_ori[4] = _start_ori[4]
-
-    simSetObjectPosition(_robot_hd, -1, robot_pos)
-    simSetObjectQuaternion(_robot_hd, -1, robot_ori)
-    set_joint_values(_joint_hds, _start_joint_values)
-
-    simSetObjectPosition(_fake_robot_hd,-1,robot_pos)
-    simSetObjectQuaternion(_fake_robot_hd, -1, robot_ori)
-    local res_robot = simCheckCollision(_fake_robot_hd, _collection_hd)
     -- local res_robot = 0
 
     local target_pos = {}
@@ -294,11 +286,21 @@ function sample_initial_poses(radius, resample)
         local obs_index = math.random(#inside_obs_index)
         obs_index = inside_obs_index[obs_index]
         local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-        obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + (math.random() - 0.5) * 0.5
-        obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 0.5
+        obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + (math.random() - 0.5) * 1.5
+        obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 1.5
         obs_pos[3] = obs_pos_before[3]
         simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)
     end
+
+    simSetObjectPosition(_robot_hd, -1, robot_pos)
+    simSetObjectQuaternion(_robot_hd, -1, robot_ori)
+    set_joint_values(_joint_hds, _start_joint_values)
+
+    simSetObjectPosition(_fake_robot_hd,-1,robot_pos)
+    simSetObjectQuaternion(_fake_robot_hd, -1, robot_ori)
+    local res_robot = simCheckCollision(_fake_robot_hd, _collection_hd)
+
+
 
     simSetObjectPosition(_fake_robot_hd,-1,target_pos)
     simSetObjectQuaternion(_fake_robot_hd, -1, target_ori)

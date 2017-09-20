@@ -150,22 +150,22 @@ class Simu_env():
         diff_l = abs(robot_l - target_l)
 
         dist = self.compute_dist(robot_state[0], robot_state[1])
-        # target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
+        target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
 
-        # if self.state_pre == []:
-        #     self.state_pre = robot_state
-        #     return 0, 0
+        if self.state_pre == []:
+            self.state_pre = robot_state
+            return 0, 0
 
-        # state_diff = np.sum(np.abs(np.asarray(self.state_pre[-5:]) - np.asarray(robot_state[-5:])))
+        state_diff = np.sum(np.abs(np.asarray(self.state_pre[-5:]) - np.asarray(robot_state[-5:])))
 
-        # state_reward = 0
-        # if state_diff == 0:
-        #     state_reward = REWARD_CRASH/self.max_length
+        state_reward = 0
+        if state_diff == 0 and dist >= 0.2:
+            state_reward = REWARD_CRASH/self.max_length
 
-        # if state_reward == 0:
-        #     reward = target_reward
-        # else:
-        #     reward = state_reward
+        if state_reward == 0:
+            reward = target_reward
+        else:
+            reward = state_reward
 
         # print(state_diff, reward)
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found

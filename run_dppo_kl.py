@@ -189,13 +189,13 @@ class Worker(object):
             observes, actions, rewards, unscaled_obs = [], [], [], []
             stuck_num = 0
             step = 0.0
-            scale, offset = SCALER.get()
-            scale[-1] = 1.0  # don't scale time step feature
-            offset[-1] = 0.0  # don't offset time step feature
-            np.save("./model/rl/scaler", [scale, offset])
+            # scale, offset = SCALER.get()
+            # scale[-1] = 1.0  # don't scale time step feature
+            # offset[-1] = 0.0  # don't offset time step feature
+            # np.save("./model/rl/scaler", [scale, offset])
 
-            # scalar = np.load("./model/rl/scaler.npy")
-            # scale, offset = scalar[0], scalar[1]
+            scalar = np.load("./model/rl/scaler.npy")
+            scale, offset = scalar[0], scalar[1]
 
             for t in range(EP_LEN):
                 if not ROLLING_EVENT.is_set():                  # while global PPO is updating
