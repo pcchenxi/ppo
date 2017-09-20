@@ -17,16 +17,17 @@ MODE = 'training'
 # MODE = 'testing'
 
 EP_MAX = 900000000
-EP_LEN = 100
+EP_LEN = 50
 N_WORKER = 4                 # parallel workers
 GAMMA = 0.995                 # reward discount factor
 LAM = 0.98
 
-BATCH_SIZE = 20000
+BATCH_SIZE = 500
 
 ###############################
 
 S_DIM, A_DIM = centauro_env.observation_space, centauro_env.action_space         # state and action dimension
+print(S_DIM)
 SCALER = Scaler(S_DIM)
 
 ep_dir = './batch/'
@@ -40,7 +41,7 @@ class PPO(object):
 
         self.summary_writer = tf.summary.FileWriter('data/log', self.sess.graph)
 
-        kl_targ = 0.0003
+        kl_targ = 0.02
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
         self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
 
@@ -75,8 +76,9 @@ class PPO(object):
                     if len(rewards) > 1:
                         trajectories.append(t)
 
+                print('trajectories num', len(trajectories))
                 unscaled = np.concatenate([t['unscaled_obs'] for t in trajectories])
-                # SCALER.update(unscaled) 
+                SCALER.update(unscaled) 
 
                 if INIT_DONE == False:
                     pf.add_value(trajectories, self.val_func)  # add estimated values to episodes
@@ -182,21 +184,18 @@ class Worker(object):
 
     def work(self):
         global GLOBAL_EP, GLOBAL_UPDATE_COUNTER, BATCH_SIZE, SUCCESS_NUM, CRASH_NUM, SCALER
-        while not COORD.should_stop():
-            # if GLOBAL_EP%11 == 0 and self.wid == 0:
-            #     self.varifly_values(scale, offset)     
-
+        while not COORD.should_stop(): 
             obs = self.env.reset()
             observes, actions, rewards, unscaled_obs = [], [], [], []
             stuck_num = 0
             step = 0.0
-            # scale, offset = SCALER.get()
-            # scale[-1] = 1.0  # don't scale time step feature
-            # offset[-1] = 0.0  # don't offset time step feature
-            # np.save("./model/rl/scaler", [scale, offset])
+            scale, offset = SCALER.get()
+            scale[-1] = 1.0  # don't scale time step feature
+            offset[-1] = 0.0  # don't offset time step feature
+            np.save("./model/rl/scaler", [scale, offset])
 
-            scalar = np.load("./model/rl/scaler.npy")
-            scale, offset = scalar[0], scalar[1]
+            # scalar = np.load("./model/rl/scaler.npy")
+            # scale, offset = scalar[0], scalar[1]
 
             for t in range(EP_LEN):
                 if not ROLLING_EVENT.is_set():                  # while global PPO is updating
@@ -223,8 +222,8 @@ class Worker(object):
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
    
                 # print('GLOBAL_UPDATE_COUNTER', GLOBAL_UPDATE_COUNTER/BATCH_SIZE, end="\r")
-                # if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:                
-                if t == EP_LEN - 1 or done!= 0:
+                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:                
+                # if t == EP_LEN - 1 or done!= 0:
                     if done == 1:
                         SUCCESS_NUM += 1
                         print('goal')
@@ -239,7 +238,6 @@ class Worker(object):
                         unscaled_obs.append(obs_)
                         obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_) 
-
                         print('unfinish') 
                     
                     mean_reward = np.sum(rewards[:-1])
@@ -254,8 +252,10 @@ class Worker(object):
 
                     observes, actions, rewards, unscaled_obs = [], [], [], []
                     QUEUE.put(trajectory)          # put data in the queue
-                    # if GLOBAL_UPDATE_COUNTER >= BATCH_SIZE:
-                    if  GLOBAL_EP%21== 0: 
+                    if GLOBAL_UPDATE_COUNTER >= BATCH_SIZE:
+                    # if  GLOBAL_EP%21== 0: 
+                        # if self.wid == 0:
+                        #     self.varifly_values(scale, offset)    
                         ROLLING_EVENT.clear()       # stop collecting data
                         UPDATE_EVENT.set()          # globalPPO update
 
