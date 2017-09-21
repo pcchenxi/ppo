@@ -17,17 +17,16 @@ MODE = 'training'
 # MODE = 'testing'
 
 EP_MAX = 900000000
-EP_LEN = 50
-N_WORKER = 4                 # parallel workers
+EP_LEN = 100
+N_WORKER = 4                  # parallel workers
 GAMMA = 0.995                 # reward discount factor
-LAM = 0.98
+LAM = 0.1
 
 BATCH_SIZE = 500
 
 ###############################
 
 S_DIM, A_DIM = centauro_env.observation_space, centauro_env.action_space         # state and action dimension
-print(S_DIM)
 SCALER = Scaler(S_DIM)
 
 ep_dir = './batch/'
@@ -139,13 +138,11 @@ class Worker(object):
 
     def varifly_values(self, scale, offset):
         global MODE, GLOBAL_EP
-        grid_size = 0.5        
+        grid_size = 0.2        
         img_size = int(2/grid_size)
         map_shift = 1
         img = np.zeros((img_size, img_size), np.float32)
         values = []
-        # scalar = np.load("./model/rl/scaler.npy")
-        # scale, offset = scalar[0], scalar[1]
         for i in np.arange(-1, 1, grid_size):
             for j in np.arange(-1, 1, grid_size):
                 self.env.call_sim_function('centauro', 'move_robot', [i, j])
@@ -156,7 +153,7 @@ class Worker(object):
 
                 value = self.ppo.get_v(obs)
 
-                # value = np.clip(value, -0.1, 0.5)
+                value = np.clip(value, -1, 1)
                 # if value > 1:
                 #     print ('state', s[0], s[1], value)
                 x = i + map_shift
@@ -304,6 +301,8 @@ if __name__ == '__main__':
 
     # checking value function
     if MODE == 'testing':
+        scalar = np.load("./model/rl/scaler.npy")
+        scale, offset = scalar[0], scalar[1]
         worker = Worker(0)
         worker.ppo.load_model()
-        worker.varifly_values()
+        worker.varifly_values(scale, offset)

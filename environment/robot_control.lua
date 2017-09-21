@@ -9,7 +9,7 @@ dx = step * scale
 dy = step * scale
 dh = step/3 * scale
 dl = step/3 * scale
-dw = math.pi/180 * 2 * scale
+dw = math.pi/180 * 5 * scale
 
 collision_hd_1 = simGetCollectionHandle('centauro')
 collision_hd_2 = simGetCollectionHandle('obstacle_all')
@@ -67,7 +67,7 @@ function do_action_rl(robot_hd, action)
     result = do_action(robot_hd, action)
 
     local new_pos=simGetObjectPosition(robot_hd,-1)
-    if math.abs(new_pos[1])>0.5 or math.abs(new_pos[2])>0.5 then 
+    if math.abs(new_pos[1])>1 or math.abs(new_pos[2])>1 then 
         result = 'a'
     end
 

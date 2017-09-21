@@ -129,7 +129,7 @@ class Simu_env():
     def compute_reward(self, robot_state, action, found_pose):
         # 0,  1,  2,      3,  4,  5              -5,    -4, -3, -2, -1 
         # tx, ty, ttheta, th, tl, obs..........  theta,  h,  l,  rx, ry   
-        # _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
+        _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
 
         # out= False
         reward = 0
@@ -154,20 +154,19 @@ class Simu_env():
 
         if self.state_pre == []:
             self.state_pre = robot_state
-            return 0, 0
+            # self.dist_pre = dist
+            # return 0, 0
 
         state_diff = np.sum(np.abs(np.asarray(self.state_pre[-5:]) - np.asarray(robot_state[-5:])))
-
+        # print(np.asarray(robot_state[0:5]), np.asarray(robot_state[-5:]))
         state_reward = 0
         if state_diff == 0 and dist >= 0.2:
-            state_reward = REWARD_CRASH/self.max_length
+            state_reward = REWARD_CRASH/(self.max_length*2)
 
-        if state_reward == 0:
-            reward = target_reward
-        else:
-            reward = state_reward
+        obs_reward = -(0.1-min_dist[0])*10/(self.max_length*2)
 
-        # print(state_diff, reward)
+        reward = target_reward + state_reward + obs_reward
+        # print(state_diff, reward, target_reward, dist, self.dist_pre)
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             # print('crashed!!')
             # reward = self.dist_pre
@@ -186,7 +185,7 @@ class Simu_env():
             # reward = REWARD_CRASH/self.max_length
             return reward, -1
 
-        if dist < 0.2 and diff_z < 0.02 and diff_theta < 0.02 and diff_l < 0.02:
+        if dist < 0.2 and diff_z < 0.02: # and diff_l < 0.02:
             # print('Goal' )
             # reward += dist + REWARD_GOAL
             # reward += 1 - np.exp(-dist) + REWARD_GOAL
