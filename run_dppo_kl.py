@@ -16,13 +16,13 @@ from dppo import ppo_functions as pf
 MODE = 'training'
 # MODE = 'testing'
 
-EP_MAX = 900000000
-EP_LEN = 100
+EP_MAX = 30000
+EP_LEN = 50
 N_WORKER = 4                  # parallel workers
 GAMMA = 0.995                 # reward discount factor
-LAM = 0.1
+LAM = 0
 
-BATCH_SIZE = 500
+BATCH_SIZE = 1000
 
 ###############################
 
@@ -211,11 +211,13 @@ class Worker(object):
                 actions.append(action)
                 # print(action)
                 obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
-
                 rewards.append(reward)
+
+                if t == 0:
+                    print('state value:', self.ppo.get_v(obs))
+
                 obs = obs_
                 step += 1e-3  # increment time step feature
-
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
    
                 # print('GLOBAL_UPDATE_COUNTER', GLOBAL_UPDATE_COUNTER/BATCH_SIZE, end="\r")
@@ -234,7 +236,7 @@ class Worker(object):
                         # obs_ = np.append(obs_, [[step]], axis=1)  # add time step feature
                         unscaled_obs.append(obs_)
                         obs_ = (obs_ - offset) * scale  # center and scale observations
-                        rewards[-1] += GAMMA*self.ppo.get_v(obs_) 
+                        rewards[-1] += GAMMA*self.ppo.get_v(obs_)                     
                         print('unfinish') 
                     
                     mean_reward = np.sum(rewards[:-1])

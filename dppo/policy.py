@@ -75,13 +75,13 @@ class Policy(object):
             self.lr = 9e-4 / np.sqrt(hid2_size)  # 9e-4 empirically determined
             # 3 hidden layers with tanh activations
             out = tf.layers.dense(self.obs_ph, hid1_size, tf.tanh,
-                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / self.obs_dim)), name="p_h1")
+                                kernel_initializer= tf.random_normal_initializer(stddev=np.sqrt(1 / self.obs_dim)), name="p_h1")
             out = tf.layers.dense(out, hid2_size, tf.tanh,
-                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid1_size)), name="p_h2")
+                                kernel_initializer= tf.random_normal_initializer(stddev=np.sqrt(1 / hid1_size)), name="p_h2")
             out = tf.layers.dense(out, hid3_size, tf.tanh,
-                                kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid2_size)), name="p_h3")
+                                kernel_initializer= tf.random_normal_initializer(stddev=np.sqrt(1 / hid2_size)), name="p_h3")
             self.means = tf.layers.dense(out, self.act_dim,
-                                        kernel_initializer= tf.contrib.layers.xavier_initializer()) #tf.random_normal_initializer(stddev=np.sqrt(1 / hid3_size)), name="means")
+                                        kernel_initializer= tf.random_normal_initializer(stddev=np.sqrt(1 / hid3_size)), name="means")
 
         # logvar_speed is used to 'fool' gradient descent into making faster updates
         # to log-variances. heuristic sets logvar_speed based on network size.

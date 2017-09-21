@@ -75,29 +75,17 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     local state = {}
     local target_angle = math.atan2(target_pos[1], target_pos[2])
     local target_dist = math.sqrt(target_pos[1]*target_pos[1] + target_pos[2]*target_pos[2])
-    state[1] = target_pos[1]-- target_angle
+    state[1] = target_pos[1]--target_angle
     state[2] = target_pos[2] --target_dist
-    state[3] = target_ori[3]
-    state[4] = target_pos[3] - 0.4
-    state[5] = _pre_target_l
+    -- state[3] = target_ori[3]
+    -- state[4] = target_pos[3] - 0.4
+    -- state[5] = _pre_target_l
 
-    -- state[1] = pos[1]
-    -- state[2] = pos[2]
-    -- state[3] = ori[3]
-    -- state[4] = pos[3]
-    -- state[5] = leg_l
-
-    -- state[6] = target_pos[1]
-    -- state[7] = target_pos[2]
-    -- state[8] = target_ori[3]
-
-    -- state[9] = 0.0
-    -- state[10] = 0.1
 
     for i=1, #_obstacle_dynamic_hds, 1 do 
-        local obs_pos = simGetObjectPosition(_obstacle_dynamic_hds[i], _robot_hd)
+        local obs_pos = simGetObjectPosition(_obstacle_dynamic_hds[i], _robot_body_hd)
         local obs_pos_global = simGetObjectPosition(_obstacle_dynamic_hds[i], -1)
-        -- local res, type, dim = simGetShapeGeomInfo(obstacle_dynamic_hds[i])
+        local res, type, dim = simGetShapeGeomInfo(_obstacle_dynamic_hds[i])
         
         local x = math.abs(obs_pos_global[1])
         local y = math.abs(obs_pos_global[2])
@@ -105,22 +93,47 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
         if x < 2.5 and y < 2.5 then   
             local obs_angle = math.atan2(obs_pos[1], obs_pos[2])
             local obs_dist = math.sqrt(obs_pos[1]*obs_pos[1] + obs_pos[2]*obs_pos[2])        
-            if obs_dist > 1 then
-                obs_dist = -1
-                obs_angle = -1
-            end 
+            height = obs_pos[3] 
+
+    --         local threshold = 0.1
+    --         local res, data = simCheckDistance(_obstacle_dynamic_hds[i], _collection_hd, threshold)
+    --         local dist = threshold
+    --         if data == nil then 
+    --             dist = threshold
+    --         else 
+    --             dist = data[7]
+    --         end      
+
+    --         if obs_dist > 0.5 then
+    --             obs_dist = -1
+    --             obs_angle = -1
+    --             height = -1
+    --             dist = -1
+    --         end 
+                  
+
             state[#state+1] = obs_angle
             state[#state+1] = obs_dist
-            state[#state+1] = obs_pos_global[3] 
+            -- state[#state+1] = obs_dist
+            -- state[#state+1] = height
         end
     end
 
-    state[#state+1] = ori[3]
-    state[#state+1] = pos[3]
-    state[#state+1] = leg_l
+    -- local threshold = 0.1
+    -- local res, data = simCheckDistance(_collection_robot_hd, _collection_hd, threshold)
+    -- local dist = threshold
+    -- if data == nil then 
+    --     dist = threshold
+    -- else 
+    --     dist = data[7]
+    -- end
+    -- state[#state+1] = dist
+    -- state[#state+1] = ori[3]
+    -- state[#state+1] = pos[3]
+    -- state[#state+1] = leg_l
 
-    state[#state+1] = 0.5 - math.abs(pos[1])
-    state[#state+1] = 0.5 - math.abs(pos[2])
+    -- state[#state+1] = 0.5 - math.abs(pos[1])
+    -- state[#state+1] = 0.5 - math.abs(pos[2])
 
     -- print ('in get robot state:', #state[3])
     return {}, state, {}, ''
@@ -207,8 +220,8 @@ function sample_obstacle_position()
         local x = math.abs(obs_pos[1])
         local y = math.abs(obs_pos[2])
 
-        local bound_x = 1
-        local bound_y = 2
+        local bound_x = 1.5
+        local bound_y = 1.5
         if x < 2.5 and y < 2.5 then 
             inside_obs_index[#inside_obs_index +1] = i
             obs_pos[1] = (math.random()-0.5)*2 * bound_x 
@@ -235,6 +248,7 @@ end
 function sample_initial_poses(radius, resample)
 
     if resample == 0 then 
+        _pre_robot_ori[3] = (math.random() - 0.5) *2 * math.pi 
         simSetObjectPosition(_robot_hd, -1, _pre_robot_pos)
         simSetObjectQuaternion(_robot_hd, -1, _pre_robot_ori)
         simSetObjectPosition(_target_hd, -1, _pre_target_pos)
@@ -265,8 +279,8 @@ function sample_initial_poses(radius, resample)
         target_ori = _pre_target_ori
     else 
         target_pos[1] = 0 --(math.random() - 0.5) *2 + robot_pos[1] --* 2 * 0.5
-        target_pos[2] = math.random()
-        target_pos[3] = (math.random() - 0.5) * 2 * 0.1 + 0.4
+        target_pos[2] = math.random() *2
+        target_pos[3] = _pre_target_pos[3] --(math.random() - 0.5) * 2 * 0.1 + 0.4
 
         target_ori[1] = _start_ori[1] 
         target_ori[2] = _start_ori[2]
@@ -295,8 +309,8 @@ function sample_initial_poses(radius, resample)
             local obs_index = math.random(#inside_obs_index)
             obs_index = inside_obs_index[obs_index]
             local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + (math.random() - 0.5) * 0.3
-            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 0.5
+            obs_pos[1] = target_pos[1] + (math.random() - 0.5) * 0.3
+            obs_pos[2] = target_pos[2] + (math.random() - 0.5) * 1
             obs_pos[3] = obs_pos_before[3]
             simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)
         end
@@ -306,16 +320,16 @@ function sample_initial_poses(radius, resample)
             local obs_index = math.random(#inside_obs_index)
             obs_index = inside_obs_index[obs_index]
             local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 - math.random() * 0.5
-            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 0.5
+            obs_pos[1] = target_pos[1] - math.random() * 1
+            obs_pos[2] = target_pos[2] + (math.random() - 0.5) * 1
             obs_pos[3] = obs_pos_before[3]
             simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)
             local obs_pos = {}
             local obs_index = math.random(#inside_obs_index)
             obs_index = inside_obs_index[obs_index]
             local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + math.random() * 0.5
-            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 0.5
+            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + math.random() * 1.5
+            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 1.5
             obs_pos[3] = obs_pos_before[3]
             simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)         
         end
@@ -328,8 +342,6 @@ function sample_initial_poses(radius, resample)
     simSetObjectPosition(_fake_robot_hd,-1,robot_pos)
     simSetObjectQuaternion(_fake_robot_hd, -1, robot_ori)
     local res_robot = simCheckCollision(_fake_robot_hd, _collection_hd)
-
-
 
     simSetObjectPosition(_fake_robot_hd,-1,target_pos)
     simSetObjectQuaternion(_fake_robot_hd, -1, target_ori)
@@ -345,11 +357,14 @@ function sample_initial_poses(radius, resample)
 end
 
 function init(radius, resample)
-    -- resample = 1
-    -- global_counter = global_counter + 1
-    -- if global_counter%300000 == 0 then 
+    -- resample = 0
+    -- if global_counter%200 == 0 then 
     --     resample = 1
     -- end
+    global_counter = global_counter + 1
+    if global_counter > 3000 then
+        global_counter = 3000
+    end
 
     local init_value = 1
     while (init_value ~= 0) do

@@ -37,8 +37,8 @@ observation_pixel = int(observation_range/grid_size)
 
 observation_image_size = observation_pixel*2
 observation_control = 8
-observation_space = 40 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
-action_space = 5 #len(action_list)
+observation_space = 6 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
+action_space = 2 #len(action_list)
 
 REWARD_GOAL = 1
 REWARD_CRASH = -1
@@ -129,71 +129,67 @@ class Simu_env():
     def compute_reward(self, robot_state, action, found_pose):
         # 0,  1,  2,      3,  4,  5              -5,    -4, -3, -2, -1 
         # tx, ty, ttheta, th, tl, obs..........  theta,  h,  l,  rx, ry   
-        _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
-
+        # _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
+        # min_dist = robot_state[-6]
         # out= False
-        reward = 0
+        reward = REWARD_CRASH/(self.max_length*2)
 
         # action = np.asarray(action)
         # action_cost = np.sum(action*action)
 
-        robot_z = robot_state[-4]
-        target_z = robot_state[3]
-        diff_z = abs(robot_z - target_z)
+        # robot_z = robot_state[-4]
+        # target_z = robot_state[3]
+        # diff_z = abs(robot_z - target_z)
 
-        robot_theta = robot_state[-5]
-        target_theta = robot_state[2]
-        diff_theta = abs(robot_theta - target_theta)
+        # robot_theta = robot_state[-5]
+        # target_theta = robot_state[2]
+        # diff_theta = abs(robot_theta - target_theta)
 
-        robot_l = robot_state[-3]
-        target_l = robot_state[3]
-        diff_l = abs(robot_l - target_l)
+        # robot_l = robot_state[-3]
+        # target_l = robot_state[3]
+        # diff_l = abs(robot_l - target_l)
+
+        forward_reward = REWARD_GOAL/(self.max_length*8)
+        backward_reward = REWARD_CRASH/(self.max_length*8)
+        step_reward = REWARD_CRASH/(self.max_length*4)
+        target_reward = 0
 
         dist = self.compute_dist(robot_state[0], robot_state[1])
-        target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
+        if dist < self.dist_pre:
+            target_reward = forward_reward
+        else:
+            target_reward = backward_reward
 
-        if self.state_pre == []:
-            self.state_pre = robot_state
-            # self.dist_pre = dist
-            # return 0, 0
+        # target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
+        # reward = target_reward + step_reward
+        # target_reward = -(dist - self.dist_pre)/20 #- 0.01*action_cost
 
-        state_diff = np.sum(np.abs(np.asarray(self.state_pre[-5:]) - np.asarray(robot_state[-5:])))
-        # print(np.asarray(robot_state[0:5]), np.asarray(robot_state[-5:]))
-        state_reward = 0
-        if state_diff == 0 and dist >= 0.2:
-            state_reward = REWARD_CRASH/(self.max_length*2)
+        # if self.state_pre == []:
+        #     self.state_pre = robot_state
+        #     # self.dist_pre = dist
+        #     # return 0, 0
 
-        obs_reward = -(0.1-min_dist[0])*10/(self.max_length*2)
+        # state_diff = np.sum(np.abs(np.asarray(self.state_pre[-5:]) - np.asarray(robot_state[-5:])))
+        # # print(np.asarray(robot_state[0:5]), np.asarray(robot_state[-5:]))
+        # state_reward = 0
+        # if state_diff == 0 and dist >= 0.2:
+        #     state_reward = REWARD_CRASH/(self.max_length*2)
 
-        reward = target_reward + state_reward + obs_reward
+        # obs_reward = -(0.1-min_dist)/(self.max_length*2)
+
+        # reward = target_reward + step_reward #+ state_reward #+ obs_reward
         # print(state_diff, reward, target_reward, dist, self.dist_pre)
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
-            # print('crashed!!')
-            # reward = self.dist_pre
             reward = REWARD_CRASH
             return reward, -1
 
         if found_pose == bytearray(b"c"):       # when collision or no pose can be found
-            # print('crashed!!')
-            # reward = self.dist_pre
-
-            # for obs_dist in obs_dists:
-            #     if obs_dist < 0.5 and obs_dist > 0.15:
-            #         reward += -(0.5 - obs_dist)/100
-            # reward = -0.02 + time_reward + obs_reward
             reward = REWARD_CRASH
-            # reward = REWARD_CRASH/self.max_length
             return reward, -1
 
-        if dist < 0.2 and diff_z < 0.02: # and diff_l < 0.02:
-            # print('Goal' )
-            # reward += dist + REWARD_GOAL
-            # reward += 1 - np.exp(-dist) + REWARD_GOAL
+        if dist < 0.2: # and diff_l < 0.02:
             reward = REWARD_GOAL
             return reward, 1
-
-            # reward += dist * 100
-            # print('Win!!!')
 
         # print(dist, self.dist_pre, reward)
         self.dist_pre = dist

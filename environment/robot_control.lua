@@ -66,10 +66,10 @@ function do_action_rl(robot_hd, action)
     -- print(leg_l, action[5])
     result = do_action(robot_hd, action)
 
-    local new_pos=simGetObjectPosition(robot_hd,-1)
-    if math.abs(new_pos[1])>1 or math.abs(new_pos[2])>1 then 
-        result = 'a'
-    end
+    -- local new_pos=simGetObjectPosition(robot_hd,-1)
+    -- if math.abs(new_pos[1])>0.5 or math.abs(new_pos[2])>0.5 then 
+    --     result = 'a'
+    -- end
 
     if result ~= 't' then 
         simSetObjectPosition(robot_hd,-1,current_pos)
