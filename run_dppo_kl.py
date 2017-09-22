@@ -16,13 +16,13 @@ from dppo import ppo_functions as pf
 MODE = 'training'
 # MODE = 'testing'
 
-EP_MAX = 30000
+EP_MAX = 900000000
 EP_LEN = 50
 N_WORKER = 4                  # parallel workers
 GAMMA = 0.995                 # reward discount factor
-LAM = 0
+LAM = 0.9
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 10000
 
 ###############################
 
@@ -40,7 +40,7 @@ class PPO(object):
 
         self.summary_writer = tf.summary.FileWriter('data/log', self.sess.graph)
 
-        kl_targ = 0.02
+        kl_targ = 0.03
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
         self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
 
@@ -193,6 +193,7 @@ class Worker(object):
 
             scalar = np.load("./model/rl/scaler.npy")
             scale, offset = scalar[0], scalar[1]
+            restart = False
 
             for t in range(EP_LEN):
                 if not ROLLING_EVENT.is_set():                  # while global PPO is updating
@@ -205,23 +206,23 @@ class Worker(object):
                 obs = obs.astype(np.float32).reshape((1, -1))
                 # obs = np.append(obs, [[step]], axis=1)  # add time step feature
                 unscaled_obs.append(obs)
-                obs = (obs - offset) * scale  # center and scale observations
+                # obs = (obs - offset) * scale  # center and scale observations
                 observes.append(obs)
                 action = self.ppo.choose_action(obs)
                 actions.append(action)
                 # print(action)
                 obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
                 rewards.append(reward)
-
-                if t == 0:
+                if t == 0 and self.wid == 0:
                     print('state value:', self.ppo.get_v(obs))
-
                 obs = obs_
                 step += 1e-3  # increment time step feature
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
    
+                if obs_[0] > 2.5 or done!= 0:
+                    restart = True
                 # print('GLOBAL_UPDATE_COUNTER', GLOBAL_UPDATE_COUNTER/BATCH_SIZE, end="\r")
-                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:                
+                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or restart:                
                 # if t == EP_LEN - 1 or done!= 0:
                     if done == 1:
                         SUCCESS_NUM += 1
@@ -234,8 +235,7 @@ class Worker(object):
                     elif done == 0:
                         obs_ = obs_.astype(np.float32).reshape((1, -1))
                         # obs_ = np.append(obs_, [[step]], axis=1)  # add time step feature
-                        unscaled_obs.append(obs_)
-                        obs_ = (obs_ - offset) * scale  # center and scale observations
+                        # obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_)                     
                         print('unfinish') 
                     

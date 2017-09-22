@@ -37,7 +37,7 @@ observation_pixel = int(observation_range/grid_size)
 
 observation_image_size = observation_pixel*2
 observation_control = 8
-observation_space = 6 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
+observation_space = 12 #observation_image_size*observation_image_size + 8  # 60 x 60 + 8
 action_space = 2 #len(action_list)
 
 REWARD_GOAL = 1
@@ -73,7 +73,7 @@ class Simu_env():
         # observation = obs_grid.flatten()
         # state = robot_state[2:]  # theta, h, l. tx, ty, ttheta, th, tl
         state = robot_state
-        state = np.asarray(state)
+        state = np.asarray(state[1:])
         # print(len(state))
 
         # state = np.append(obs_grid, self.count_down)
@@ -90,7 +90,7 @@ class Simu_env():
         res, retInts, retFloats, retStrings, retBuffer = self.call_sim_function('centauro', 'reset', [observation_range*2])        
         state, reward, is_finish, info = self.step([0, 0, 0, 0, 0])
 
-        dist = self.compute_dist(state[0], state[1])
+        dist = state[0]
         self.dist_pre = dist
 
         self.ep_init = False        
@@ -149,18 +149,15 @@ class Simu_env():
         # target_l = robot_state[3]
         # diff_l = abs(robot_l - target_l)
 
-        forward_reward = REWARD_GOAL/(self.max_length*8)
-        backward_reward = REWARD_CRASH/(self.max_length*8)
+
         step_reward = REWARD_CRASH/(self.max_length*4)
-        target_reward = 0
 
-        dist = self.compute_dist(robot_state[0], robot_state[1])
-        if dist < self.dist_pre:
-            target_reward = forward_reward
-        else:
-            target_reward = backward_reward
+        dist = robot_state[0]
+        target_reward = -(dist - self.dist_pre)/0.15
+        target_reward = target_reward/(self.max_length*4)
+        if target_reward < 0:
+            target_reward = 0
 
-        # target_reward = -(dist - self.dist_pre) #- 0.01*action_cost
         # reward = target_reward + step_reward
         # target_reward = -(dist - self.dist_pre)/20 #- 0.01*action_cost
 
@@ -177,7 +174,7 @@ class Simu_env():
 
         # obs_reward = -(0.1-min_dist)/(self.max_length*2)
 
-        # reward = target_reward + step_reward #+ state_reward #+ obs_reward
+        reward = target_reward + step_reward #+ state_reward #+ obs_reward
         # print(state_diff, reward, target_reward, dist, self.dist_pre)
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
             reward = REWARD_CRASH

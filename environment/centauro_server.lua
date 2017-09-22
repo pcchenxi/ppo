@@ -75,8 +75,13 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     local state = {}
     local target_angle = math.atan2(target_pos[1], target_pos[2])
     local target_dist = math.sqrt(target_pos[1]*target_pos[1] + target_pos[2]*target_pos[2])
-    state[1] = target_pos[1]--target_angle
-    state[2] = target_pos[2] --target_dist
+
+    state[1] = target_dist
+    if target_dist > 1 then
+        target_dist = 1
+    end
+    state[2] = target_angle/math.pi
+    state[3] = (target_dist-0.5)*2
     -- state[3] = target_ori[3]
     -- state[4] = target_pos[3] - 0.4
     -- state[5] = _pre_target_l
@@ -104,16 +109,12 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     --             dist = data[7]
     --         end      
 
-    --         if obs_dist > 0.5 then
-    --             obs_dist = -1
-    --             obs_angle = -1
-    --             height = -1
-    --             dist = -1
-    --         end 
+            if obs_dist > 1 then
+                obs_dist = 1
+            end 
                   
-
-            state[#state+1] = obs_angle
-            state[#state+1] = obs_dist
+            state[#state+1] = obs_angle/math.pi
+            state[#state+1] = (obs_dist-0.5)*2
             -- state[#state+1] = obs_dist
             -- state[#state+1] = height
         end
@@ -279,7 +280,7 @@ function sample_initial_poses(radius, resample)
         target_ori = _pre_target_ori
     else 
         target_pos[1] = 0 --(math.random() - 0.5) *2 + robot_pos[1] --* 2 * 0.5
-        target_pos[2] = math.random() *2
+        target_pos[2] = math.random() *1.5
         target_pos[3] = _pre_target_pos[3] --(math.random() - 0.5) * 2 * 0.1 + 0.4
 
         target_ori[1] = _start_ori[1] 
@@ -299,39 +300,16 @@ function sample_initial_poses(radius, resample)
 
 
     -- ep type
-    local type = 1
-    if math.random() < 0.5 then 
-        type = 2
-    end 
-    if type == 1 then 
+    if math.random() < 0.8 then 
         if #inside_obs_index > 0 then
             local obs_pos = {}
             local obs_index = math.random(#inside_obs_index)
             obs_index = inside_obs_index[obs_index]
             local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = target_pos[1] + (math.random() - 0.5) * 0.3
-            obs_pos[2] = target_pos[2] + (math.random() - 0.5) * 1
+            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + (math.random() - 0.5) * 1
+            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 1
             obs_pos[3] = obs_pos_before[3]
             simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)
-        end
-    else 
-        if #inside_obs_index > 0 then
-            local obs_pos = {}
-            local obs_index = math.random(#inside_obs_index)
-            obs_index = inside_obs_index[obs_index]
-            local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = target_pos[1] - math.random() * 1
-            obs_pos[2] = target_pos[2] + (math.random() - 0.5) * 1
-            obs_pos[3] = obs_pos_before[3]
-            simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)
-            local obs_pos = {}
-            local obs_index = math.random(#inside_obs_index)
-            obs_index = inside_obs_index[obs_index]
-            local obs_pos_before =  simGetObjectPosition(_obstacle_dynamic_hds[obs_index], -1)
-            obs_pos[1] = (robot_pos[1] + target_pos[1])/2 + math.random() * 1.5
-            obs_pos[2] = (robot_pos[2] + target_pos[2])/2 + (math.random() - 0.5) * 1.5
-            obs_pos[3] = obs_pos_before[3]
-            simSetObjectPosition(_obstacle_dynamic_hds[obs_index], -1, obs_pos)         
         end
     end
 
