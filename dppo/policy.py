@@ -72,7 +72,7 @@ class Policy(object):
             hid3_size = self.act_dim * 10  # 10 empirically determined
             hid2_size = int(np.sqrt(hid1_size * hid3_size))
             # heuristic to set learning rate based on NN size (tuned on 'Hopper-v1')
-            self.lr = 9e-4 / np.sqrt(hid2_size)  # 9e-4 empirically determined
+            self.lr = 9e-2 / np.sqrt(hid2_size)  # 9e-4 empirically determined
             # 3 hidden layers with tanh activations
             out = tf.layers.dense(self.obs_ph, hid1_size, tf.tanh,
                                 kernel_initializer= tf.random_normal_initializer(stddev=np.sqrt(1 / self.obs_dim)), name="p_h1")
@@ -157,7 +157,7 @@ class Policy(object):
         openai's approach
         See: https://arxiv.org/pdf/1707.06347.pdf
         """
-        EPSILON = 0.01
+        EPSILON = 0.2
         self.ratio = tf.exp(self.logp - self.logp_old)
         surr = self.advantages_ph * self.ratio
 
@@ -188,7 +188,7 @@ class Policy(object):
             self.loss = self._clip_loss()
 
         optimizer = tf.train.AdamOptimizer(self.lr_ph)
-        self.train_op = optimizer.minimize(self.loss - 0.02*self.entropy)
+        self.train_op = optimizer.minimize(self.loss - 0.0*self.entropy)
 
 
     def sample(self, obs):

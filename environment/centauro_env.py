@@ -73,7 +73,7 @@ class Simu_env():
         # observation = obs_grid.flatten()
         # state = robot_state[2:]  # theta, h, l. tx, ty, ttheta, th, tl
         state = robot_state
-        state = np.asarray(state[1:])
+        state = np.asarray(state[2:])
         # print(len(state))
 
         # state = np.append(obs_grid, self.count_down)
@@ -183,12 +183,15 @@ class Simu_env():
 
         if found_pose == bytearray(b"c"):       # when collision or no pose can be found
             # reward = REWARD_CRASH
-            reward = reward*30
+            reward = REWARD_CRASH/(30)
             return reward, 0
 
         if dist < 0.2: # and diff_l < 0.02:
             reward = REWARD_GOAL
             return reward, 1
+
+        if robot_state[1] > 1: # out of boundary
+            return reward, -2
 
         # print(dist, self.dist_pre, reward)
         self.dist_pre = dist

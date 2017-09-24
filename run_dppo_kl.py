@@ -17,12 +17,12 @@ MODE = 'training'
 # MODE = 'testing'
 
 EP_MAX = 900000000
-EP_LEN = 50
+EP_LEN = 1000
 N_WORKER = 4                  # parallel workers
 GAMMA = 0.995                 # reward discount factor
 LAM = 0
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 ###############################
 
@@ -213,18 +213,19 @@ class Worker(object):
                 # print(action)
                 obs_, reward, done, _ = self.env.step(np.squeeze(action, axis=0))
                 rewards.append(reward)
-                if t == 0 and self.wid == 0:
-                    print('state value:', self.ppo.get_v(obs))
-                    self.write_summary('Perf/start_v', self.ppo.get_v(obs))  
+                if self.wid == 0:
+                    if t == 0:
+                        print('state value:', self.ppo.get_v(obs))
+                        self.write_summary('Perf/start_v', self.ppo.get_v(obs))  
+                    else:
+                        print('     state value:', self.ppo.get_v(obs), reward)
                     
                 obs = obs_
                 step += 1e-3  # increment time step feature
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
    
-                if obs_[0] > 2.5 or done!= 0:
-                    restart = True
                 # print('GLOBAL_UPDATE_COUNTER', GLOBAL_UPDATE_COUNTER/BATCH_SIZE, end="\r")
-                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or restart:                
+                if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= BATCH_SIZE or done!= 0:                
                 # if t == EP_LEN - 1 or done!= 0:
                     if done == 1:
                         SUCCESS_NUM += 1
@@ -236,7 +237,7 @@ class Worker(object):
                         if self.wid == 0:     
                             print('crash')
                         self.write_summary('Perf/ep_length', t)  
-                    elif done == 0:
+                    elif done == 0 or done == -2:
                         obs_ = obs_.astype(np.float32).reshape((1, -1))
                         # obs_ = np.append(obs_, [[step]], axis=1)  # add time step feature
                         # obs_ = (obs_ - offset) * scale  # center and scale observations

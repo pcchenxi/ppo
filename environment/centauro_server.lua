@@ -70,6 +70,7 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     local ori =simGetObjectQuaternion(_robot_hd,-1)
     -- local joint_pose = get_joint_values(_joint_hds)
     local leg_l = get_current_l(_robot_hd)
+    local dist_to_center = math.sqrt(pos[1]*pos[1] + pos[2]*pos[2])
 
     -- x, y, theta, h, l,   tx, ty, t_theta,   t_h, t_l
     local state = {}
@@ -77,11 +78,12 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     local target_dist = math.sqrt(target_pos[1]*target_pos[1] + target_pos[2]*target_pos[2])
 
     state[1] = target_dist
+    state[2] = dist_to_center
     if target_dist > 1 then
-        target_dist = 1
+        target_dist = -1
     end
-    state[2] = target_angle/math.pi
-    state[3] = (target_dist-0.5)*2
+    state[3] = target_angle/math.pi
+    state[4] = (target_dist-0.5)*2
     -- state[3] = target_ori[3]
     -- state[4] = target_pos[3] - 0.4
     -- state[5] = _pre_target_l
@@ -110,7 +112,8 @@ function get_robot_state(inInts,inFloats,inStrings,inBuffer)
     --         end      
 
             if obs_dist > 1 then
-                obs_dist = 1
+                obs_dist = -1
+                obs_angle = 0
             end 
                   
             state[#state+1] = obs_angle/math.pi
@@ -280,7 +283,7 @@ function sample_initial_poses(radius, resample)
         target_ori = _pre_target_ori
     else 
         target_pos[1] = 0 --(math.random() - 0.5) *2 + robot_pos[1] --* 2 * 0.5
-        target_pos[2] = math.random() *1.5 * global_counter/20000
+        target_pos[2] = math.random() *1 --* global_counter/20000
         target_pos[3] = _pre_target_pos[3] --(math.random() - 0.5) * 2 * 0.1 + 0.4
 
         target_ori[1] = _start_ori[1] 
