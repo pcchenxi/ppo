@@ -157,7 +157,7 @@ class Policy(object):
         openai's approach
         See: https://arxiv.org/pdf/1707.06347.pdf
         """
-        EPSILON = 0.02
+        EPSILON = 0.01
         self.ratio = tf.exp(self.logp - self.logp_old)
         surr = self.advantages_ph * self.ratio
 
@@ -188,7 +188,7 @@ class Policy(object):
             self.loss = self._clip_loss()
 
         optimizer = tf.train.AdamOptimizer(self.lr_ph)
-        self.train_op = optimizer.minimize(self.loss - 0.0*self.entropy)
+        self.train_op = optimizer.minimize(self.loss - 0.02*self.entropy)
 
 
     def sample(self, obs):

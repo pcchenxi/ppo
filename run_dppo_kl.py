@@ -20,9 +20,9 @@ EP_MAX = 900000000
 EP_LEN = 50
 N_WORKER = 4                  # parallel workers
 GAMMA = 0.995                 # reward discount factor
-LAM = 0.9
+LAM = 0
 
-BATCH_SIZE = 10000
+BATCH_SIZE = 1000
 
 ###############################
 
@@ -42,7 +42,7 @@ class PPO(object):
 
         kl_targ = 0.03
         self.val_func = NNValueFunction(S_DIM, self.sess, self.summary_writer)
-        self.policy = Policy(S_DIM, A_DIM, kl_targ, 'kl', self.sess, self.summary_writer)
+        self.policy = Policy(S_DIM, A_DIM, kl_targ, 'clip', self.sess, self.summary_writer)
 
         #############################################################################################
         self.sess.run(tf.global_variables_initializer())
@@ -215,6 +215,8 @@ class Worker(object):
                 rewards.append(reward)
                 if t == 0 and self.wid == 0:
                     print('state value:', self.ppo.get_v(obs))
+                    self.write_summary('Perf/start_v', self.ppo.get_v(obs))  
+                    
                 obs = obs_
                 step += 1e-3  # increment time step feature
                 GLOBAL_UPDATE_COUNTER += 1               # count to minimum batch size, no need to wait other workers
@@ -226,18 +228,21 @@ class Worker(object):
                 # if t == EP_LEN - 1 or done!= 0:
                     if done == 1:
                         SUCCESS_NUM += 1
-                        print('goal')
+                        if self.wid == 0:
+                            print('goal')
                         self.write_summary('Perf/ep_length', t)  
                     elif done == -1:
-                        CRASH_NUM += 1        
-                        print('crash')
+                        CRASH_NUM += 1   
+                        if self.wid == 0:     
+                            print('crash')
                         self.write_summary('Perf/ep_length', t)  
                     elif done == 0:
                         obs_ = obs_.astype(np.float32).reshape((1, -1))
                         # obs_ = np.append(obs_, [[step]], axis=1)  # add time step feature
                         # obs_ = (obs_ - offset) * scale  # center and scale observations
                         rewards[-1] += GAMMA*self.ppo.get_v(obs_)                     
-                        print('unfinish') 
+                        if self.wid == 0:
+                            print('unfinish') 
                     
                     mean_reward = np.sum(rewards[:-1])
                     self.write_summary('Perf/mean_reward', mean_reward)  

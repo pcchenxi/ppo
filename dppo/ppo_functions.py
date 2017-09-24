@@ -101,6 +101,8 @@ def build_train_set(trajectories):
     advantages = np.concatenate([t['advantages'] for t in trajectories])
     # normalize advantages
     advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-6)
-
+    # for i in range(len(advantages)):
+    #     if advantages[i] < 0.7 and advantages[i] > -0.7:
+    #         advantages[i] = 0
     return observes, actions, advantages, disc_sum_rew
 

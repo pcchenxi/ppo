@@ -280,7 +280,7 @@ function sample_initial_poses(radius, resample)
         target_ori = _pre_target_ori
     else 
         target_pos[1] = 0 --(math.random() - 0.5) *2 + robot_pos[1] --* 2 * 0.5
-        target_pos[2] = math.random() *1.5
+        target_pos[2] = math.random() *1.5 * global_counter/20000
         target_pos[3] = _pre_target_pos[3] --(math.random() - 0.5) * 2 * 0.1 + 0.4
 
         target_ori[1] = _start_ori[1] 
@@ -340,8 +340,8 @@ function init(radius, resample)
     --     resample = 1
     -- end
     global_counter = global_counter + 1
-    if global_counter > 3000 then
-        global_counter = 3000
+    if global_counter > 20000 then
+        global_counter = 20000
     end
 
     local init_value = 1

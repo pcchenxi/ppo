@@ -132,7 +132,7 @@ class Simu_env():
         # _, _, min_dist, _, _ = self.call_sim_function('centauro', 'get_minimum_obs_dist') 
         # min_dist = robot_state[-6]
         # out= False
-        reward = REWARD_CRASH/(self.max_length*2)
+        reward = 0 #REWARD_CRASH/(self.max_length*2)
 
         # action = np.asarray(action)
         # action_cost = np.sum(action*action)
@@ -150,7 +150,7 @@ class Simu_env():
         # diff_l = abs(robot_l - target_l)
 
 
-        step_reward = REWARD_CRASH/(self.max_length*4)
+        step_reward = REWARD_CRASH/(self.max_length*200)
 
         dist = robot_state[0]
         target_reward = -(dist - self.dist_pre)/0.15
@@ -174,15 +174,17 @@ class Simu_env():
 
         # obs_reward = -(0.1-min_dist)/(self.max_length*2)
 
-        reward = target_reward + step_reward #+ state_reward #+ obs_reward
+        reward = step_reward #+ state_reward #+ obs_reward
         # print(state_diff, reward, target_reward, dist, self.dist_pre)
         if found_pose == bytearray(b"a"):       # when collision or no pose can be found
-            reward = REWARD_CRASH
-            return reward, -1
+            # reward = REWARD_CRASH
+            reward = reward*30            
+            return reward, 0
 
         if found_pose == bytearray(b"c"):       # when collision or no pose can be found
-            reward = REWARD_CRASH
-            return reward, -1
+            # reward = REWARD_CRASH
+            reward = reward*30
+            return reward, 0
 
         if dist < 0.2: # and diff_l < 0.02:
             reward = REWARD_GOAL
